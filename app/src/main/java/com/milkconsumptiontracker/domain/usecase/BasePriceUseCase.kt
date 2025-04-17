@@ -3,6 +3,8 @@ package com.milkconsumptiontracker.domain.usecase
 import com.milkconsumptiontracker.domain.model.PriceSnapshot
 import com.milkconsumptiontracker.domain.repository.BasePriceRepository
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 class BasePriceUseCase @Inject constructor(private val repository: BasePriceRepository) {
 
@@ -11,11 +13,7 @@ class BasePriceUseCase @Inject constructor(private val repository: BasePriceRepo
     repository.insertPrice(priceSnapshot)
   }
 
-  suspend fun getCurrentMonthBasePrice(monthAndYear: String): String {
-    return repository.getCurrentMonthBasePrice(monthAndYear).toString()
-  }
-  
-  fun getCurrentMonthBasePriceTest(monthAndYear: String): String {
-    return repository.getCurrentMonthBasePrice(monthAndYear).toString()
+  fun getCurrentMonthBasePrice(monthAndYear: String): Flow<String> {
+    return repository.getCurrentMonthBasePrice(monthAndYear).map { it.toString() }
   }
 }

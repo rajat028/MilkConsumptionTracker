@@ -9,14 +9,13 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -31,10 +30,10 @@ class BasePriceViewModel @Inject constructor(private val useCase: BasePriceUseCa
           SimpleDateFormat("MMM yyyy", Locale.getDefault()).format(Calendar.getInstance().time))
   val selectedMonth: StateFlow<String> = _selectedMonth
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   val currentMonthBasePrice: StateFlow<String> =
       selectedMonth
-          .map { month -> useCase.getCurrentMonthBasePrice(month) }
-          .flowOn(Dispatchers.IO)
+          .flatMapLatest { month -> useCase.getCurrentMonthBasePrice(month) }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
   fun onEvent(event: BasePriceEvent) {

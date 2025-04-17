@@ -38,6 +38,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.milkconsumptiontracker.R
 import com.milkconsumptiontracker.components.CircularProgressBarWithProgressText
 import com.milkconsumptiontracker.components.ConsumptionCell
@@ -67,8 +68,7 @@ private fun DashboardScreen(
 ) {
   val viewModel: DashboardViewModel = hiltViewModel()
   val dateSnapshot by viewModel.date.collectAsState()
-  val consumptionList by viewModel.lastSevenDaysConsumption.collectAsState()
-  val currentMonthBasePrice by viewModel.currentMonthBasePrice.collectAsState()
+  val state by viewModel.state.collectAsStateWithLifecycle()
 
   val context = LocalContext.current
   val coroutineScope = rememberCoroutineScope()
@@ -80,7 +80,7 @@ private fun DashboardScreen(
       TopBar(
           title = "Milk Tracker", navigationIconClick = { /*TODO*/ }, navigationIconVisible = false)
 
-      BasePrice(currentMonthBasePrice, dateSnapshot, onEditBasePriceClick)
+      BasePrice(state.currentMonthBasePrice, dateSnapshot, onEditBasePriceClick)
 
       Card(
           modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
@@ -113,7 +113,7 @@ private fun DashboardScreen(
           modifier = Modifier,
           verticalArrangement = Arrangement.spacedBy(16.dp),
           contentPadding = PaddingValues(top = 12.dp)) {
-            items(consumptionList) { consumption -> ConsumptionCell(consumption) }
+            items(state.lastSevenDaysConsumption) { consumption -> ConsumptionCell(consumption) }
           }
     }
 

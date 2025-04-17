@@ -10,12 +10,12 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -30,16 +30,22 @@ constructor(
   private val _date = MutableStateFlow(DateSnapshot.default())
   val date: StateFlow<DateSnapshot> = _date
 
-  val currentMonthBasePrice: StateFlow<String> =
-      date
-          .map { date -> basePriceUseCase.getCurrentMonthBasePrice(date.month) }
-          .flowOn(Dispatchers.IO)
-          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "--")
-
-  val lastSevenDaysConsumption =
-      milkConsumptionUseCase
-          .getLastSevenDaysConsumption()
-          .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+  private val _state = MutableStateFlow(DashboardState())
+  @OptIn(ExperimentalCoroutinesApi::class)
+  val state =
+      combine(
+              _state,
+              date.flatMapLatest { currentDate ->
+                basePriceUseCase.getCurrentMonthBasePrice(currentDate.month)
+              },
+              milkConsumptionUseCase.getLastSevenDaysConsumption(),
+          ) { state, basePrice, consumptions ->
+            state.copy(currentMonthBasePrice = basePrice, lastSevenDaysConsumption = consumptions)
+          }
+          .stateIn(
+              scope = viewModelScope,
+              started = SharingStarted.WhileSubscribed(5000),
+              initialValue = DashboardState())
 
   init {
     fetchCurrentDate()

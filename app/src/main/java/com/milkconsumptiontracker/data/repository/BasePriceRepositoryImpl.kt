@@ -12,7 +12,7 @@ class BasePriceRepositoryImpl @Inject constructor(private val basePriceDao: Base
     basePriceDao.insertPrice(priceSnapshot)
   }
 
-  override suspend fun getCurrentMonthBasePrice(monthAndYear: String): Flow<Int> {
+  override fun getCurrentMonthBasePrice(monthAndYear: String): Flow<Int> {
     return basePriceDao.getPrice(monthAndYear)
   }
 }

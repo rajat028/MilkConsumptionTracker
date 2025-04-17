@@ -5,5 +5,5 @@ import kotlinx.coroutines.flow.Flow
 
 interface BasePriceRepository {
   suspend fun insertPrice(priceSnapshot: PriceSnapshot)
-  suspend fun getCurrentMonthBasePrice(monthAndYear: String): Flow<Int>
+  fun getCurrentMonthBasePrice(monthAndYear: String): Flow<Int>
 }

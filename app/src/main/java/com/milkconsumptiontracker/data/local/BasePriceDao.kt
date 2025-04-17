@@ -13,5 +13,5 @@ interface BasePriceDao {
   suspend fun insertPrice(priceSnapshot: PriceSnapshot)
   
   @Query("SELECT price FROM PRICESNAPSHOT WHERE monthAndYear = :monthAndYear")
-  suspend fun getPrice(monthAndYear: String): Flow<Int>
+  fun getPrice(monthAndYear: String): Flow<Int>
 }
