@@ -10,4 +10,6 @@ abstract class AppDatabase : RoomDatabase() {
   abstract fun milkConsumptionDao(): ConsumptionDao
 
   abstract fun basePriceDao(): BasePriceDao
+  
+  abstract fun historyDao(): HistoryDao
 }

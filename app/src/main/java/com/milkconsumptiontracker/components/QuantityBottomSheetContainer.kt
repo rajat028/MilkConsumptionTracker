@@ -13,26 +13,27 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.milkconsumptiontracker.R
+import com.milkconsumptiontracker.domain.model.Consumption
 import kotlinx.coroutines.launch
 
 @Composable
 fun QuantityBottomSheetContent(
-    currentDate: String,
-    currentDay: String,
+    consumption: Consumption,
     onQuantitySelected: (Float) -> Unit,
     onDismiss: () -> Unit
 ) {
-  var value by remember { mutableFloatStateOf(0.25f) }
+  val quantity = if (consumption.quantity == 0f) 0.25f else consumption.quantity
+  var value by remember { mutableFloatStateOf(quantity) }
   val coroutineScope = rememberCoroutineScope()
 
   Column(
       modifier = Modifier.fillMaxWidth().background(Color.White).padding(16.dp),
       horizontalAlignment = Alignment.CenterHorizontally) {
-        TitleTextView(title = "$currentDate, $currentDay", color = Color.Black, setBold = true)
+        TitleTextView(
+            title = "${consumption.date}, ${consumption.day}", color = Color.Black, setBold = true)
 
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -91,8 +92,7 @@ fun QuantityBottomSheetContent(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuantityBottomSheetContainer(
-    currentDate: String,
-    currentDay: String,
+    consumption: Consumption,
     sheetState: SheetState,
     onQuantitySelected: (Float) -> Unit,
     onDismiss: () -> Unit
@@ -103,16 +103,8 @@ fun QuantityBottomSheetContainer(
       onDismissRequest = { onDismiss() },
       content = {
         QuantityBottomSheetContent(
-            currentDate = currentDate,
-            currentDay = currentDay,
+            consumption = consumption,
             onQuantitySelected = onQuantitySelected,
             onDismiss = onDismiss)
       })
-}
-
-@Preview
-@Composable
-private fun BottomSheetContainerPreview() {
-  QuantityBottomSheetContent(
-      onDismiss = {}, onQuantitySelected = {}, currentDate = "Current Date", currentDay = "Day")
 }

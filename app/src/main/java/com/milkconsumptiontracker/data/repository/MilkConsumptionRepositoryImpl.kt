@@ -19,4 +19,16 @@ constructor(private val consumptionDao: ConsumptionDao) : MilkConsumptionReposit
   ): Flow<List<Consumption>> {
     return consumptionDao.getConsumptionBetweenDates(startDate, endDate)
   }
+
+  override fun getConsumedQuantityOfMonth(month: String): Flow<Float> {
+    return consumptionDao.getConsumedQuantityOfMonth(month)
+  }
+  
+  override fun getConsumedDaysInAMonth(month: String): Flow<Int> {
+    return consumptionDao.getConsumedDaysInAMonth(month)
+  }
+  
+  override fun getConsumptionAsPerDate(date: String): Flow<Int> {
+    return consumptionDao.getConsumptionAsPerDate(date)
+  }
 }

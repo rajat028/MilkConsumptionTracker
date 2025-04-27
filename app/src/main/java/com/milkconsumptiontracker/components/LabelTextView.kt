@@ -16,7 +16,8 @@ fun LabelTextView(
     modifier: Modifier = Modifier,
     color: Color = Color.White,
     setBold: Boolean = false,
-    fontSize : TextUnit = 14.sp,
+    fontSize: TextUnit = 14.sp,
+    textAlign: TextAlign = TextAlign.Unspecified,
 ) {
   Text(
       text = title,
@@ -25,7 +26,7 @@ fun LabelTextView(
               fontWeight = if (setBold) FontWeight.Bold else FontWeight.Normal),
       color = color,
       fontSize = fontSize,
-      textAlign = TextAlign.Unspecified,
+      textAlign = textAlign,
       lineHeight = 18.sp,
       modifier = modifier)
 }

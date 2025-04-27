@@ -4,11 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.milkconsumptiontracker.domain.model.DateSnapshot
 import com.milkconsumptiontracker.domain.usecase.BasePriceUseCase
-import com.milkconsumptiontracker.domain.usecase.MilkConsumptionUseCase
+import com.milkconsumptiontracker.domain.usecase.DashboardUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,56 +20,75 @@ import kotlinx.coroutines.launch
 class DashboardViewModel
 @Inject
 constructor(
-    private val milkConsumptionUseCase: MilkConsumptionUseCase,
+    private val dashboardUseCase: DashboardUseCase,
     private val basePriceUseCase: BasePriceUseCase
 ) : ViewModel() {
 
   private val _date = MutableStateFlow(DateSnapshot.default())
   val date: StateFlow<DateSnapshot> = _date
 
-  private val _state = MutableStateFlow(DashboardState())
+  private val _progressState = MutableStateFlow(DashboardState())
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  val consumptionProgressState =
+      combine(
+              _progressState,
+              date.flatMapLatest { dashboardUseCase.getConsumedDaysInAMonthProgress(it.month) },
+              date.flatMapLatest { dashboardUseCase.getNonConsumedDaysInAMonthProgress(it.month) },
+              date.flatMapLatest { dashboardUseCase.isTodayConsumptionUpdated(it.date) }) {
+                  progressState,
+                  consumedDaysProgress,
+                  nonConsumedDaysProgress,
+                  todayConsumptionUpdated ->
+                progressState.copy(
+                    isTodayConsumptionUpdated = todayConsumptionUpdated,
+                    consumedDaysInAMonthProgress = consumedDaysProgress,
+                    nonConsumedDaysInAMonthProgress = nonConsumedDaysProgress)
+              }
+          .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardState())
+
   @OptIn(ExperimentalCoroutinesApi::class)
   val state =
       combine(
-              _state,
-              date.flatMapLatest { currentDate ->
-                basePriceUseCase.getCurrentMonthBasePrice(currentDate.month)
-              },
-              milkConsumptionUseCase.getLastSevenDaysConsumption(),
-          ) { state, basePrice, consumptions ->
-            state.copy(currentMonthBasePrice = basePrice, lastSevenDaysConsumption = consumptions)
+              consumptionProgressState,
+              date.flatMapLatest { basePriceUseCase.getCurrentMonthBasePrice(it.month) },
+              date.flatMapLatest { dashboardUseCase.getConsumedQuantityOfMonth(it.month) },
+              date.flatMapLatest { dashboardUseCase.getConsumedDaysInAMonth(it.month) },
+              date.flatMapLatest { dashboardUseCase.getNonConsumedDaysInAMonth(it.month) },
+          ) { state, basePrice, consumedQuantity, consumedDaysCount, nonConsumedDaysCount ->
+            state.copy(
+                currentMonthBasePrice = basePrice.toString(),
+                currentMonthConsumedQuantity = consumedQuantity,
+                currentMonthDueAmount = calculateDueAmount(basePrice, consumedQuantity),
+                consumedDaysCount = consumedDaysCount,
+                nonConsumedDaysCount = nonConsumedDaysCount)
           }
           .stateIn(
               scope = viewModelScope,
               started = SharingStarted.WhileSubscribed(5000),
               initialValue = DashboardState())
 
+  val lastSevenDaysConsumption =
+      dashboardUseCase
+          .getLastSevenDaysConsumption()
+          .stateIn(
+              scope = viewModelScope,
+              started = SharingStarted.WhileSubscribed(5000),
+              initialValue = emptyList())
+
   init {
-    fetchCurrentDate()
+    viewModelScope.launch { _date.value = dashboardUseCase.fetchCurrentDate() }
   }
 
   fun onEvent(event: DashboardEvent) {
     when (event) {
       is DashboardEvent.AddConsumption -> {
-        viewModelScope.launch {
-          milkConsumptionUseCase.insertQuantity(event.quantity, event.dateSnapshot)
-        }
+        viewModelScope.launch { dashboardUseCase.insertQuantity(event.consumption) }
       }
     }
   }
 
-  private fun fetchCurrentDate() {
-    val currentTime = Calendar.getInstance().time
-    _date.value =
-        DateSnapshot(
-            day = dayFormatter.format(currentTime),
-            date = dateFormatter.format(currentTime),
-            month = monthFormatter.format(currentTime))
-  }
-
-  companion object {
-    private val dayFormatter = SimpleDateFormat("EEE", Locale.getDefault())
-    private val dateFormatter = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
-    private val monthFormatter = SimpleDateFormat("MMM yyyy", Locale.getDefault())
+  private fun calculateDueAmount(basePrice: Int, consumedQuantity: Float): Float {
+    return basePrice * consumedQuantity
   }
 }

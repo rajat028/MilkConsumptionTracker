@@ -2,6 +2,7 @@ package com.milkconsumptiontracker.utils
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 fun LocalDate.formatDate(): String {
     val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy")
@@ -16,6 +17,11 @@ fun LocalDate.formatToMonth(): String {
 fun LocalDate.toDisplayDate(): String {
     val formatter = DateTimeFormatter.ofPattern("dd MMM")
     return this.format(formatter)
+}
+
+fun String.convertToLocalDate(): LocalDate {
+    val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.getDefault())
+    return LocalDate.parse(this, formatter)
 }
 
 fun String.toDisplayDate(): String {

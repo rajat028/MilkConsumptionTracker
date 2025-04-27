@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -33,7 +34,7 @@ class BasePriceViewModel @Inject constructor(private val useCase: BasePriceUseCa
   @OptIn(ExperimentalCoroutinesApi::class)
   val currentMonthBasePrice: StateFlow<String> =
       selectedMonth
-          .flatMapLatest { month -> useCase.getCurrentMonthBasePrice(month) }
+          .flatMapLatest { month -> useCase.getCurrentMonthBasePrice(month).map { it.toString() } }
           .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
 
   fun onEvent(event: BasePriceEvent) {

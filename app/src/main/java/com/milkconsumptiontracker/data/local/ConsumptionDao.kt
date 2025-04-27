@@ -14,4 +14,13 @@ interface ConsumptionDao {
   
   @Query("SELECT * FROM consumption WHERE date BETWEEN :startDate AND :endDate")
   fun getConsumptionBetweenDates(startDate: String, endDate: String): Flow<List<Consumption>>
+  
+  @Query("SELECT SUM(quantity) FROM consumption WHERE month LIKE :month")
+  fun getConsumedQuantityOfMonth(month: String): Flow<Float>
+  
+  @Query("SELECT COUNT(*) FROM consumption WHERE month LIKE :month")
+  fun getConsumedDaysInAMonth(month: String): Flow<Int>
+  
+  @Query("SELECT COUNT(*) FROM consumption WHERE date LIKE :date")
+  fun getConsumptionAsPerDate(date: String): Flow<Int>
 }

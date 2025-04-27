@@ -1,7 +1,7 @@
 package com.milkconsumptiontracker.presentation.dashboard
 
-import com.milkconsumptiontracker.domain.model.DateSnapshot
+import com.milkconsumptiontracker.domain.model.Consumption
 
 sealed class DashboardEvent {
-  data class AddConsumption(val quantity: Float, val dateSnapshot: DateSnapshot) : DashboardEvent()
+  data class AddConsumption(val consumption: Consumption) : DashboardEvent()
 }

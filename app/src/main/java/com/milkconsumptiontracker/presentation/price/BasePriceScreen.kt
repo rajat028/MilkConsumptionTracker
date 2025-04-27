@@ -26,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
@@ -37,6 +36,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.milkconsumptiontracker.components.GeneralTopBar
 import com.milkconsumptiontracker.components.MonthYearPickerDialog
 import com.milkconsumptiontracker.components.TitleTextView
+import com.milkconsumptiontracker.utils.SetSystemUiVisibility
 import com.milkconsumptiontracker.utils.SnackBarEvent
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
@@ -63,7 +63,7 @@ private fun BasePriceScreen(
     navigateBack: () -> Unit,
     snackBarEventFlow: SharedFlow<SnackBarEvent>,
 ) {
-  val context = LocalContext.current
+  SetSystemUiVisibility(useFullScreen = false)
   val snackBarHostState = remember { SnackbarHostState() }
   val selectedMonth by viewModel.selectedMonth.collectAsState()
   val currentMonthBasePrice by viewModel.currentMonthBasePrice.collectAsState()

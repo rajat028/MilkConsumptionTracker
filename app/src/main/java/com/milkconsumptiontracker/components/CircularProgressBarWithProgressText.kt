@@ -14,22 +14,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun CircularProgressBarWithProgressText() {
-    Box {
-        CircularProgressIndicator(
-            progress = { 0.2f },
-            strokeWidth = 6.dp,
-            color = Color.Blue,
-            trackColor = Color.Gray,
-            modifier = Modifier.size(60.dp)
-        )
-        
-        Text(
-            text = "2",
-            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = Bold),
-            modifier = Modifier.align(Alignment.Center),
-            color = Color.Black,
-            fontSize = 18.sp
-        )
-    }
+fun CircularProgressBarWithProgressText(daysCount: Int, progress: Float) {
+  Box {
+    CircularProgressIndicator(
+        progress = { progress },
+        strokeWidth = 6.dp,
+        color = Color.Blue,
+        trackColor = Color.Gray,
+        modifier = Modifier.size(60.dp))
+
+    Text(
+        text = "$daysCount",
+        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = Bold),
+        modifier = Modifier.align(Alignment.Center),
+        color = Color.Black,
+        fontSize = 18.sp)
+  }
 }

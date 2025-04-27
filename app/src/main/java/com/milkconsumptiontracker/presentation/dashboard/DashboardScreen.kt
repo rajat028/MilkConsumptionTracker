@@ -27,7 +27,10 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -49,8 +52,10 @@ import com.milkconsumptiontracker.components.QuantityBottomSheetContainer
 import com.milkconsumptiontracker.components.TitleTextView
 import com.milkconsumptiontracker.components.TopBar
 import com.milkconsumptiontracker.components.VerticalLine
+import com.milkconsumptiontracker.domain.model.Consumption
 import com.milkconsumptiontracker.domain.model.DateSnapshot
 import com.milkconsumptiontracker.presentation.destinations.BasePriceScreenRouteDestination
+import com.milkconsumptiontracker.presentation.destinations.HistoryScreenRouteDestination
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
@@ -58,17 +63,28 @@ import kotlinx.coroutines.launch
 @Destination(start = true)
 @Composable
 fun DashboardScreenRoute(navigator: DestinationsNavigator) {
-  DashboardScreen(onEditBasePriceClick = { navigator.navigate(BasePriceScreenRouteDestination()) })
+  DashboardScreen(
+      onEditBasePriceClick = { navigator.navigate(BasePriceScreenRouteDestination()) },
+      onHistoryClicked = { navigator.navigate(HistoryScreenRouteDestination()) })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DashboardScreen(
-    onEditBasePriceClick: () -> Unit,
-) {
+private fun DashboardScreen(onEditBasePriceClick: () -> Unit, onHistoryClicked: () -> Unit = {}) {
   val viewModel: DashboardViewModel = hiltViewModel()
   val dateSnapshot by viewModel.date.collectAsState()
+  var quantityState by
+      remember(dateSnapshot) {
+        mutableStateOf(
+            Consumption(
+                quantity = 0.25f,
+                displayDate = dateSnapshot.displayDate,
+                date = dateSnapshot.date,
+                day = dateSnapshot.day,
+                month = dateSnapshot.month))
+      }
   val state by viewModel.state.collectAsStateWithLifecycle()
+  val lastSevenDaysConsumption by viewModel.lastSevenDaysConsumption.collectAsState(emptyList())
 
   val context = LocalContext.current
   val coroutineScope = rememberCoroutineScope()
@@ -88,11 +104,15 @@ private fun DashboardScreen(
           elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
               Column(modifier = Modifier.padding(16.dp)) {
-                ConsumptionAndNonConsumptionProgress()
-                CurrentMonthConsumptionPrice()
+                ConsumptionAndNonConsumptionProgress(
+                    state.consumedDaysCount,
+                    state.nonConsumedDaysCount,
+                    state.consumedDaysInAMonthProgress,
+                    state.nonConsumedDaysInAMonthProgress)
+                CurrentMonthConsumption(state.currentMonthConsumedQuantity, dateSnapshot.month)
               }
               VerticalLine()
-              DueAmount()
+              DueAmount(dateSnapshot.month, state.currentMonthDueAmount)
             }
           }
 
@@ -106,40 +126,53 @@ private fun DashboardScreen(
                 textAlign = TextAlign.Start,
                 color = Color.Black)
 
-            GeneralTextView(title = "View All >", color = Color.Blue)
+            GeneralTextView(
+                title = "View All >",
+                color = Color.Blue,
+                modifier = Modifier.padding(4.dp).clickable { onHistoryClicked() })
           }
 
       LazyColumn(
           modifier = Modifier,
           verticalArrangement = Arrangement.spacedBy(16.dp),
           contentPadding = PaddingValues(top = 12.dp)) {
-            items(state.lastSevenDaysConsumption) { consumption -> ConsumptionCell(consumption) }
+            items(lastSevenDaysConsumption) { consumption ->
+              ConsumptionCell(
+                  consumption,
+                  onQuantityEdit = {
+                    coroutineScope.launch {
+                      quantityState = consumption
+                      quantityBottomSheetState.show()
+                    }
+                  })
+            }
           }
     }
 
-    FloatingActionButton(
-        onClick = { coroutineScope.launch { quantityBottomSheetState.show() } },
-        containerColor = Color.Blue,
-        modifier =
-            Modifier.align(Alignment.BottomEnd)
-                .padding(WindowInsets.navigationBars.asPaddingValues())
-                .padding(horizontal = 16.dp, vertical = 16.dp)) {
-          Icon(
-              imageVector = Icons.Default.Add,
-              contentDescription = "Add/Update Quantity",
-              tint = Color.White)
-        }
+    if (state.isTodayConsumptionUpdated.not()) {
+      FloatingActionButton(
+          onClick = { coroutineScope.launch { quantityBottomSheetState.show() } },
+          containerColor = Color.Blue,
+          modifier =
+              Modifier.align(Alignment.BottomEnd)
+                  .padding(WindowInsets.navigationBars.asPaddingValues())
+                  .padding(horizontal = 16.dp, vertical = 16.dp)) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Add/Update Quantity",
+                tint = Color.White)
+          }
+    }
   }
 
   if (quantityBottomSheetState.isVisible) {
     QuantityBottomSheetContainer(
-        currentDate = dateSnapshot.date,
-        currentDay = dateSnapshot.day,
+        consumption = quantityState,
         sheetState = quantityBottomSheetState,
         onQuantitySelected = { quantity ->
           coroutineScope.launch {
             viewModel.onEvent(
-                DashboardEvent.AddConsumption(quantity = quantity, dateSnapshot = dateSnapshot))
+                DashboardEvent.AddConsumption(quantityState.copy(quantity = quantity)))
             quantityBottomSheetState.hide()
           }
         },
@@ -168,11 +201,12 @@ private fun BasePrice(
 }
 
 @Composable
-private fun DueAmount() {
+private fun DueAmount(month: String, currentMonthDueAmount: Float) {
   Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
     LabelTextView(title = "Due Amount", color = Color.Gray)
+    GeneralTextView(title = "($month)", color = Color.Gray)
     LabelTextView(
-        title = "₹ 5000",
+        title = "₹ $currentMonthDueAmount",
         setBold = true,
         color = Color.Black,
         fontSize = 16.sp,
@@ -181,26 +215,34 @@ private fun DueAmount() {
 }
 
 @Composable
-private fun ConsumptionAndNonConsumptionProgress() {
+private fun ConsumptionAndNonConsumptionProgress(
+    consumedDaysCount: Int,
+    nonConsumedDaysCount: Int,
+    consumedDaysInAMonthProgress: Float,
+    nonConsumedDaysInAMonthProgress: Float
+) {
   Row(verticalAlignment = Alignment.CenterVertically) {
-    ConsumedDataWithProgress()
+    ConsumedDataWithProgress(consumedDaysCount, consumedDaysInAMonthProgress)
     Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-    NonConsumedDataWithProgress()
+    NonConsumedDataWithProgress(nonConsumedDaysCount, nonConsumedDaysInAMonthProgress)
   }
 }
 
 @Composable
-private fun CurrentMonthConsumptionPrice() {
+private fun CurrentMonthConsumption(currentMonthConsumedQuantity: Float, month: String) {
   Row(verticalAlignment = Alignment.CenterVertically) {
-    LabelTextView(title = "Current month consumption:", color = Color.Gray, setBold = true)
-    LabelTextView(title = "50 L", Modifier.padding(horizontal = 8.dp), color = Color.Gray)
+    LabelTextView(title = "Consumption($month)", color = Color.Gray, setBold = true)
+    LabelTextView(
+        title = "$currentMonthConsumedQuantity Ltrs",
+        Modifier.padding(horizontal = 8.dp),
+        color = Color.Gray)
   }
 }
 
 @Composable
-private fun NonConsumedDataWithProgress() {
+private fun NonConsumedDataWithProgress(nonConsumedDaysCount: Int, progress: Float) {
   Column(horizontalAlignment = Alignment.CenterHorizontally) {
-    CircularProgressBarWithProgressText()
+    CircularProgressBarWithProgressText(nonConsumedDaysCount, progress)
     GeneralTextView(
         title = "Non-consumed days",
         color = Color.Gray,
@@ -209,9 +251,9 @@ private fun NonConsumedDataWithProgress() {
 }
 
 @Composable
-private fun ConsumedDataWithProgress() {
+private fun ConsumedDataWithProgress(consumedDaysCount: Int, progress: Float) {
   Column(horizontalAlignment = Alignment.CenterHorizontally) {
-    CircularProgressBarWithProgressText()
+    CircularProgressBarWithProgressText(consumedDaysCount, progress)
     GeneralTextView(
         title = "Consumed days", color = Color.Gray, modifier = Modifier.padding(vertical = 8.dp))
   }

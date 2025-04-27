@@ -13,7 +13,7 @@ class BasePriceUseCase @Inject constructor(private val repository: BasePriceRepo
     repository.insertPrice(priceSnapshot)
   }
 
-  fun getCurrentMonthBasePrice(monthAndYear: String): Flow<String> {
-    return repository.getCurrentMonthBasePrice(monthAndYear).map { it.toString() }
+  fun getCurrentMonthBasePrice(monthAndYear: String): Flow<Int> {
+    return repository.getCurrentMonthBasePrice(monthAndYear)
   }
 }
