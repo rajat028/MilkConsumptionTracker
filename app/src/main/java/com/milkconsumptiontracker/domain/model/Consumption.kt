@@ -10,4 +10,14 @@ data class Consumption(
     val quantity: Float,
     val day: String,
     val month: String
-)
+) {
+    companion object {
+        val EMPTY = Consumption(
+            date = "",
+            displayDate = "",
+            quantity = 0f,
+            day = "",
+            month = ""
+        )
+    }
+}

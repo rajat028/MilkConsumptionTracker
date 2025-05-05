@@ -1,5 +1,6 @@
 package com.milkconsumptiontracker.presentation.dashboard
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -56,6 +57,7 @@ import com.milkconsumptiontracker.domain.model.Consumption
 import com.milkconsumptiontracker.domain.model.DateSnapshot
 import com.milkconsumptiontracker.presentation.destinations.BasePriceScreenRouteDestination
 import com.milkconsumptiontracker.presentation.destinations.HistoryScreenRouteDestination
+import com.milkconsumptiontracker.utils.isZeroOrEmpty
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import kotlinx.coroutines.launch
@@ -151,7 +153,17 @@ private fun DashboardScreen(onEditBasePriceClick: () -> Unit, onHistoryClicked: 
 
     if (state.isTodayConsumptionUpdated.not()) {
       FloatingActionButton(
-          onClick = { coroutineScope.launch { quantityBottomSheetState.show() } },
+          onClick = {
+            if (state.currentMonthBasePrice.isZeroOrEmpty()) {
+              Toast.makeText(
+                      context,
+                      "Base Price is necessary before entering quantity",
+                      Toast.LENGTH_SHORT)
+                  .show()
+            } else {
+              coroutineScope.launch { quantityBottomSheetState.show() }
+            }
+          },
           containerColor = Color.Blue,
           modifier =
               Modifier.align(Alignment.BottomEnd)

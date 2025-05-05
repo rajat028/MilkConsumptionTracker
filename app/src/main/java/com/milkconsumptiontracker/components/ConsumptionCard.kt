@@ -22,10 +22,11 @@ import com.milkconsumptiontracker.domain.model.Consumption
 @Composable
 fun ConsumptionCell(
     consumption: Consumption,
-    onQuantityEdit: () -> Unit
+    onQuantityEdit: () -> Unit,
+    modifier: Modifier = Modifier.fillMaxWidth()
 ) {
   Row(
-      modifier = Modifier.fillMaxWidth(),
+      modifier = modifier,
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.SpaceBetween) {
         Column {

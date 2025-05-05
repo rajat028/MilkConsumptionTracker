@@ -1,6 +1,7 @@
 package com.milkconsumptiontracker.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,7 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -39,6 +39,7 @@ import java.time.YearMonth
 fun CalendarView(
     calendarState: MutableState<YearMonth>,
     consumedDates: List<LocalDate>,
+    selectedDate: LocalDate,
     onMonthChange: (YearMonth) -> Unit,
     onDayClicked: (LocalDate) -> Unit
 ) {
@@ -85,14 +86,19 @@ fun CalendarView(
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(7),
-        modifier = Modifier.fillMaxHeight(),
         content = {
           items(paddedDays.size) { index ->
             val day = paddedDays[index]
+            val isSelected = day?.date == selectedDate
             Box(
                 modifier =
                     Modifier.aspectRatio(1f)
                         .padding(4.dp)
+                        .then(
+                            if (isSelected)
+                                Modifier.border(
+                                    width = 2.dp, color = Color.Black, shape = CircleShape)
+                            else Modifier)
                         .clip(CircleShape)
                         .background(
                             when {
@@ -101,7 +107,12 @@ fun CalendarView(
                               day.isConsumed -> Color(0xFF4CAF50) // Green
                               else -> Color(0xFFF44336) // Red
                             })
-                        .clickable { onDayClicked(day?.date ?: return@clickable) },
+                        .clickable {
+                          day?.let { selectedDay ->
+                            if (selectedDay.isFutureDate) return@clickable
+                            onDayClicked(selectedDay.date)
+                          }
+                        },
                 contentAlignment = Alignment.Center) {
                   if (day != null) {
                     Text(text = day.date.dayOfMonth.toString(), color = Color.White)
